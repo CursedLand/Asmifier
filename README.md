@@ -12,6 +12,7 @@ This convert .NET (C#) code into a utility code in [AsmResolver](https://github.
 - Methods and Fields calls support.
 - Arguments Support (Parameter Definitions).
 - Any code optimization or improvements.
+- Give users modal they can choose code styles and prefixes options.
 
 # 🧩 What This Made For ?
 - Giving beginners a good change they deserve.

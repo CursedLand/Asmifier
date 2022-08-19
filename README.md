@@ -5,7 +5,7 @@ A utility tool helps you build & learn building metadata members using high repr
 This convert .NET (C#) code into a utility code in [AsmResolver](https://github.com/Washi1337/AsmResolver/).
 
 # 😍 Demo
-![demo](https://github.com/CursedLand/Asmifier/blob/master/demo.png)(https://github.com/CursedLand/Asmifier/blob/master/demo.png)
+![demo](https://github.com/CursedLand/Asmifier/blob/master/demo.png)
 
 # 🪄 TODO:
 - Exception Handlers.

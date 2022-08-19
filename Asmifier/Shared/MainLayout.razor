@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+
+<PageTitle>Asmifier</PageTitle>
+
+<div class="flex flex-col w-full h-screen">
+    <NavMenu/>
+    <div class="flex-1 overflow-y-auto grow p-4">
+        @Body
+    </div>
+    <footer class="bg-white shadow-md shadow-black flex text-sm text-bold p-4 items-center justify-center">
+        <span class="rubik flex items-center gap-x-1 fill-black">
+            Copyright © 2022 |
+            @Icons.Github
+            <a class="rubik text-blue-500" href="https://github.com/CursedLand">
+                CursedLand<span class="rubik text-black">,</span>
+            </a>
+            @Icons.Github
+            <a class="rubik text-blue-500" href="https://github.com/Washi1337">
+                Washi
+                <span class="text-black">
+                    (AsmResolver)
+                </span>
+            </a>
+        </span>
+    </footer>
+</div>
+

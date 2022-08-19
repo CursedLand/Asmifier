@@ -1,0 +1,131 @@
+﻿@page "/"
+@using System.Collections.Immutable
+@using System.Text
+@using Asmifier.Core
+@using AsmResolver.DotNet
+@using Microsoft.CodeAnalysis
+@using Microsoft.CodeAnalysis.CSharp
+@using Microsoft.CodeAnalysis.Text
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Index - Asmifier</PageTitle>
+
+<div class="flex flex-col gap-6 w-full h-full">
+    <div class="rubik flex gap-x-2">
+        <button type="button" class="py-2 px-3 text-sm font-medium text-center text-white bg-blue-500 rounded-lg hover:bg-blue-600" @onclick=@(async () => { await CompileAssembly(); })>Asmify your code</button>
+        <div class="grow"><!--Spacer!--></div>
+        <button type="button" class="py-2 px-3 text-sm font-medium text-center text-gray-900 border border-gray-200 rounded-lg">@Icons.Clone</button>
+        <button type="button" class="py-2 px-3 text-sm font-medium text-center text-gray-900 border border-gray-200 rounded-lg">@Icons.Settings</button>
+    </div>
+    <div class="flex gap-2 grow">
+        <div id="codeContainer" class="hp w-1/3"></div>
+        
+        @*obsolete code*@
+        
+        @*@if (_errors is not null && !_errors.Value.IsEmpty) {
+            <div class="flex flex-col h-fit w-full p-4 gap-2 mb-4 text-sm fill-red-700 text-red-700 bg-red-100 rounded-md" role="alert">
+                <div class="flex gap-2 items-center">
+                    @Icons.Exclamation
+                    <span class="font-medium">Ensure to fix these errors:</span>
+                </div>
+                <ul class="ml-4 text-red-700 list-disc list-inside">
+                    @foreach (Diagnostic error in _errors) {
+                        <li>@(string.Format("{0} ({1})", error.GetMessage(), error.Id))</li>
+                    }
+                </ul>
+            </div>
+        }
+        else {
+            <div id="codeResultContainer" class="h-5/6 w-2/3"></div>
+        }*@
+        
+        <div id="codeResultContainer" class="hp w-2/3"></div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            await JsRuntime.InvokeVoidAsync("initializeEditors");
+        }
+        await base.OnAfterRenderAsync(firstRender);    
+    }
+
+    public async Task CompileAssembly() {
+
+        var dummyLog = new StringBuilder();
+
+        var sync = async () => await JsRuntime.InvokeVoidAsync("setResultCode", dummyLog.ToString());
+        var clear = async () => await JsRuntime.InvokeVoidAsync("setResultCode", "");
+        await clear();
+        // clears code errors/warnings/hints.
+        await JsRuntime.InvokeVoidAsync("clearEditorErrors");
+        // getting code from monaco editor using JsRuntime.
+        var csCode = await JsRuntime.InvokeAsync<string>("getEditorCode");
+        dummyLog.AppendLine("/* Getting code... */");
+        await sync();
+        dummyLog.AppendLine("/* Parsing code... */");
+        await sync();
+        var syntaxTree = Parse(csCode, CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.LatestMajor));
+        
+        dummyLog.AppendLine("/* Compiling code... */");
+        await sync();
+        var compilation = CSharpCompilation.Create("Library.dll", new[] { syntaxTree }, DefaultReferences, DefaultCompilationOptions);
+        
+        _errors = compilation.GetDiagnostics();
+
+        StateHasChanged(); // re-render the page.
+
+        if (!_errors.Value.IsEmpty) {
+            var arr = _errors.Value.Select(item => {
+                
+                var span = item.Location.GetMappedLineSpan().Span;
+                
+                return new {
+                    code = item.Id,
+                    message = item.GetMessage(),
+                    severity = (int)item.Severity,
+                    startLine = span.Start.Line + 1,
+                    startCol = span.Start.Character + 1,
+                    endLine = span.End.Line + 1,
+                    endCol = span.End.Character + 1,
+                };
+            }).ToArray<object>();
+
+            await JsRuntime.InvokeVoidAsync("setEditorErrors", new object[]{arr});
+        }
+        
+        if (_errors.Value.Any(e => e.Severity is DiagnosticSeverity.Error)) {
+            return;
+        }
+        var resultBuffer = new MemoryStream();
+
+        // fill code into pe representation buffer.
+        compilation.Emit(resultBuffer);
+        
+        var codeBuilder = new AsmifierCodeWriter(ModuleDefinition.FromBytes(resultBuffer.ToArray()));
+        await clear();
+
+        await JsRuntime.InvokeVoidAsync("setResultCode", codeBuilder.GetResult());
+    }
+
+    public SyntaxTree Parse(string csCode, CSharpParseOptions? parseOptions = null) =>
+        SyntaxFactory.ParseSyntaxTree(SourceText.From(csCode, Encoding.UTF8), parseOptions);
+
+    private static string _runtimePath = @"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\{0}.dll";  
+  
+    // bad style, also assuming having v4.8 .net framework is bad too.
+    private static readonly IEnumerable<MetadataReference> DefaultReferences = new[] {MetadataReference.CreateFromFile(string.Format(_runtimePath, "mscorlib")), MetadataReference.CreateFromFile(string.Format(_runtimePath, "System")), MetadataReference.CreateFromFile(string.Format(_runtimePath, "System.Core"))};  
+    
+    // bad style.
+    private static readonly IEnumerable<string> DefaultNamespaces = new[] {"System", "System.IO", "System.Net", "System.Linq", "System.Text", "System.Text.RegularExpressions", "System.Collections.Generic"};
+    
+    private static readonly CSharpCompilationOptions DefaultCompilationOptions =  
+        new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary) // building dll.
+            .WithAllowUnsafe(true) // keeping users free.
+            .WithOptimizationLevel(OptimizationLevel.Release) // TODO: make it opt-in.  
+            .WithUsings(DefaultNamespaces);
+
+    private ImmutableArray<Diagnostic>? _errors;
+
+}

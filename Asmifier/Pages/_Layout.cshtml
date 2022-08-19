@@ -1,0 +1,98 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@namespace Asmifier.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="~/" />
+    <link href="~/site.css" rel="stylesheet" />
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="monaco-editor/min/vs/editor/editor.main.css">
+    <script src="https://cdn.tailwindcss.com/"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <script>
+        function initializeEditors() {
+            if (typeof monaco !== 'undefined') {
+                window.editor = monaco.editor.create(document.getElementById('codeContainer'), {
+                    value: 'using System;\n\ninternal class Program\n{\n    static void HelloWorld()\n    {\n        Console.WriteLine("Hello World!");\n    }\n}',
+                    language: 'csharp',
+                    fontLigatures: true,
+                    roundedSelection: true,
+                    minimap: { enabled: false }
+                });
+                window.resultEditor = monaco.editor.create(document.getElementById('codeResultContainer'), {
+                    language: 'csharp',
+                    roundedSelection: true,
+                    minimap: { enabled: false }
+                });
+            }
+            
+        }
+        function toggleTheme(themeName) {
+            monaco.editor.setTheme(themeName);
+        }
+        function getEditorCode() {
+            return window.editor.getValue();
+        }
+        function setResultCode(code) {
+            window.resultEditor.setValue(code);
+        }
+        function clearEditorErrors() {
+            monaco.editor.setModelMarkers(editor.getModel(), "owner", []);
+        }
+        function setEditorErrors(datas) {
+            var markers = datas.map((item) => {
+                let severity = monaco.MarkerSeverity.Hint;
+                if (item.severity === 1) severity = monaco.MarkerSeverity.Info;
+                if (item.severity === 2) severity = monaco.MarkerSeverity.Warning;
+                if (item.severity === 3) severity = monaco.MarkerSeverity.Error;
+                
+                return {
+                    code: item.code,
+                    severity: severity,
+                    message: item.message,
+                    startLineNumber: item.startLine,
+                    startColumn: item.startCol,
+                    endLineNumber: item.endLine,
+                    endColumn: item.endCol
+                }
+            });
+
+            monaco.editor.setModelMarkers(editor.getModel(), "owner", markers);
+
+            //monaco.editor.setModelMarkers(window.editor, "owner", markers);
+            
+        }
+    </script>
+</head>
+<body class="h-full">
+    @RenderBody()
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            An error has occurred. This application may no longer respond until reloaded.
+        </environment>
+        <environment include="Development">
+            An unhandled exception has occurred. See browser dev tools for details.
+        </environment>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.server.js"></script>
+
+    <script>var require = { paths: { 'vs': 'monaco-editor/min/vs' } };</script>
+    <script src="monaco-editor/min/vs/loader.js"></script>
+    <script src="monaco-editor/min/vs/editor/editor.main.nls.js"></script>
+    <script src="monaco-editor/min/vs/editor/editor.main.js"></script>
+
+</body>
+</html>

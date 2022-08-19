@@ -108,7 +108,7 @@ public class AsmifierCodeWriter {
 
         foreach (var variable in body.LocalVariables) {
             var variablePrefix = $"{methodPrefix}_V_{variable.Index}";
-            BuildVariable(variablePrefix, BuildNewObj(nameof(CilLocalVariable)), false);
+            BuildVariable(variablePrefix, BuildNewObj(nameof(CilLocalVariable), BuildTypeSignature(variable.TypeSignature)), false);
             _variablesData[variable] = variablePrefix;
             var expression = $"{methodPrefix}.{nameof(MethodDefinition.CilMethodBody)}.{nameof(CilMethodBody.LocalVariables)}.Add({variablePrefix});";
             _builder.AppendLine(expression);

@@ -15,7 +15,7 @@ This convert .NET (C#) code into a utility code in [AsmResolver](https://github.
 - Give users modal they can choose code styles and prefixes options.
 
 # 🧩 What This Made For ?
-- Giving beginners a good change they deserve.
+- Giving beginners a good chance they deserve.
 - Understanding how to build members and cil codes.
 
 # 🔮 Credits 
